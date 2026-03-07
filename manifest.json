@@ -1,0 +1,16 @@
+{
+  "id": "com.ncsender.espstatus",
+  "name": "ESP Status Light",
+  "version": "0.1.5",
+  "entry": "index.js",
+  "icon": "icon.svg",
+  "category": "utility",
+  "priority": 50,
+  "configUi": "config.html",
+  "toolMenu": [
+    { "id": "open-config", "label": "ESP Status Light", "icon": "icon.svg", "clientOnly": true }
+  ],
+  "description": "Sends CNC machine state to an ESP32 running ESPHome to drive addressable LEDs. Includes a live job progress bar across the LED strip.",
+  "repository": "https://github.com/Beeeeeans/ncsender-plugin-espstatus",
+"events": ["server-state-updated", "onAfterJobEnd"]
+}

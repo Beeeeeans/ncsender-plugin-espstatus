@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<style>
+/* ── Reset & variables ──────────────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:            #1a1e2e;
+  --surface:       #242840;
+  --surface-hi:    #2d3255;
+  --border:        #363d5c;
+  --text:          #ccd0e8;
+  --text-dim:      #7a85a6;
+  --accent:        #4fa3e8;
+  --accent-hi:     #6ab6f2;
+  --green:         #4caf7d;
+  --yellow:        #f0a84e;
+  --red:           #e05252;
+  --radius:        5px;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* ── Tabs ────────────────────────────────────────────────────────────────── */
+.tabs {
+  display: flex;
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 16px;
+  flex-shrink: 0;
+  gap: 2px;
+}
+.tab {
+  padding: 11px 16px;
+  cursor: pointer;
+  border-bottom: 2px solid transparent;
+  color: var(--text-dim);
+  font-weight: 500;
+  font-size: 12px;
+  letter-spacing: 0.02em;
+  transition: color .15s;
+  user-select: none;
+}
+.tab:hover { color: var(--text); }
+.tab.active { color: var(--accent); border-bottom-color: var(--accent); }
+
+/* ── Content ─────────────────────────────────────────────────────────────── */
+.content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 22px;
+}
+.pane { display: none; }
+.pane.active { display: block; }
+
+/* ── Section heading ─────────────────────────────────────────────────────── */
+.sh {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: var(--text-dim);
+  margin: 22px 0 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--border);
+}
+.sh:first-child { margin-top: 0; }
+
+/* ── Info box ────────────────────────────────────────────────────────────── */
+.info {
+  background: rgba(79,163,232,.08);
+  border: 1px solid rgba(79,163,232,.25);
+  border-radius: var(--radius);
+  padding: 11px 14px;
+  font-size: 12px;
+  color: var(--text-dim);
+  line-height: 1.65;
+  margin-bottom: 14px;
+}
+.info strong, .info code { color: var(--text); }
+.info code { font-family: monospace; background: rgba(255,255,255,.06); padding: 1px 4px; border-radius: 3px; }
+
+/* ── Form grid ───────────────────────────────────────────────────────────── */
+.fg {
+  display: grid;
+  grid-template-columns: 185px 1fr;
+  gap: 10px 14px;
+  max-width: 580px;
+  align-items: center;
+  margin-bottom: 6px;
+}
+.fl { color: var(--text-dim); font-size: 12px; text-align: right; }
+
+input[type=text], input[type=number] {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  padding: 6px 10px;
+  border-radius: var(--radius);
+  font-size: 13px;
+  transition: border-color .15s;
+}
+input[type=text]:focus, input[type=number]:focus {
+  outline: none; border-color: var(--accent);
+}
+input[type=text] { width: 100%; }
+input[type=number] { width: 110px; }
+
+/* ── Inline row helpers ──────────────────────────────────────────────────── */
+.row { display: flex; align-items: center; gap: 8px; }
+
+/* ── Buttons ─────────────────────────────────────────────────────────────── */
+.btn {
+  padding: 6px 14px;
+  border-radius: var(--radius);
+  border: none;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all .15s;
+  white-space: nowrap;
+}
+.btn-primary   { background: var(--accent);   color: #fff; }
+.btn-primary:hover { background: var(--accent-hi); }
+.btn-secondary { background: transparent; border: 1px solid var(--border); color: var(--text-dim); }
+.btn-secondary:hover { border-color: var(--text); color: var(--text); }
+.btn-ghost     { background: transparent; border: 1px solid var(--border); color: var(--text-dim); padding: 4px 10px; font-size: 11px; }
+.btn-ghost:hover { border-color: var(--accent); color: var(--accent); }
+
+/* ── Connection indicator ────────────────────────────────────────────────── */
+.dot { width: 8px; height: 8px; border-radius: 50%; background: var(--border); flex-shrink: 0; }
+.dot.ok  { background: var(--green); }
+.dot.err { background: var(--red); }
+.dot.spin { background: var(--yellow); animation: blink 1s infinite; }
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.3} }
+.conn-lbl { font-size: 11px; color: var(--text-dim); }
+
+/* ── State table ─────────────────────────────────────────────────────────── */
+.st { width: 100%; border-collapse: collapse; font-size: 12px; }
+.st th {
+  text-align: left; padding: 7px 10px;
+  color: var(--text-dim); font-weight: 600; font-size: 11px;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+.st td { padding: 5px 10px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: middle; }
+.st tr:last-child td { border-bottom: none; }
+.st tbody tr:hover td { background: var(--surface-hi); }
+
+/* State badge */
+.badge {
+  display: inline-block;
+  padding: 2px 8px 2px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  background: rgba(255,255,255,.06);
+  border-left: 3px solid currentColor;
+}
+
+/* Color cell */
+.cc { display: flex; align-items: center; gap: 7px; }
+input[type=color] {
+  width: 30px; height: 26px;
+  padding: 2px; border: 1px solid var(--border);
+  border-radius: 3px; background: var(--surface); cursor: pointer;
+}
+.hex { font-family: monospace; font-size: 11px; color: var(--text-dim); min-width: 50px; }
+
+/* Brightness cell */
+.bc { display: flex; align-items: center; gap: 7px; min-width: 120px; }
+input[type=range] { flex: 1; accent-color: var(--accent); cursor: pointer; }
+.bv { font-size: 11px; color: var(--text-dim); min-width: 22px; text-align: right; }
+
+/* Select */
+select {
+  background: var(--surface); border: 1px solid var(--border);
+  color: var(--text); padding: 5px 8px;
+  border-radius: var(--radius); font-size: 12px;
+  cursor: pointer; width: 100%;
+}
+select:focus { outline: none; border-color: var(--accent); }
+
+/* ── Effects reference table ─────────────────────────────────────────────── */
+.et { width: 100%; border-collapse: collapse; font-size: 12px; }
+.et th {
+  text-align: left; padding: 7px 10px;
+  color: var(--text-dim); font-size: 11px; font-weight: 600;
+  text-transform: uppercase; letter-spacing: .05em;
+  border-bottom: 1px solid var(--border);
+}
+.et td { padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.04); vertical-align: top; }
+.et tr:last-child td { border-bottom: none; }
+
+.tag {
+  display: inline-block; padding: 1px 6px;
+  border-radius: 3px; font-size: 10px; font-weight: 600; white-space: nowrap;
+}
+.tag-any  { background: rgba(79,163,232,.18); color: #4fa3e8; }
+.tag-addr { background: rgba(76,175,125,.18); color: #4caf7d; }
+.tag-prog { background: rgba(160,0,255,.18);  color: #b84ef7; }
+
+/* ── Footer ──────────────────────────────────────────────────────────────── */
+.footer {
+  display: flex; align-items: center; gap: 8px;
+  padding: 11px 22px; border-top: 1px solid var(--border);
+  background: var(--surface); flex-shrink: 0;
+}
+.fmsg { font-size: 12px; margin-left: auto; opacity: 0; transition: opacity .2s; }
+.fmsg.show { opacity: 1; }
+.fmsg.ok  { color: var(--green); }
+.fmsg.err { color: var(--red); }
+.fmsg.inf { color: var(--accent); }
+</style>
+</head>
+<body>
+
+<!-- ── Tab bar ─────────────────────────────────────────────────────────────── -->
+<div class="tabs">
+  <div class="tab active" data-tab="connection">Connection</div>
+  <div class="tab" data-tab="states">Machine States</div>
+  <div class="tab" data-tab="progress">Progress Bar</div>
+  <div class="tab" data-tab="effects">Effects Reference</div>
+</div>
+
+<!-- ── Content ─────────────────────────────────────────────────────────────── -->
+<div class="content">
+
+  <!-- CONNECTION ──────────────────────────────────────────────────────────── -->
+  <div id="pane-connection" class="pane active">
+    <p class="sh">ESP32 Connection</p>
+    <div class="fg">
+      <span class="fl">ESP32 Host / IP</span>
+      <input type="text" id="espHost" placeholder="192.168.1.100">
+
+      <span class="fl">Light Entity ID</span>
+      <div class="row">
+        <input type="text" id="lightEntityId" placeholder="cnc_status" style="flex:1">
+        <button class="btn btn-secondary" onclick="testConn()">Test</button>
+        <div class="row" style="gap:5px">
+          <div class="dot" id="cDot"></div>
+          <span class="conn-lbl" id="cLbl"></span>
+        </div>
+      </div>
+
+      <span class="fl">Progress Entity ID</span>
+      <input type="text" id="progressEntityId" placeholder="cnc_progress">
+
+      <span class="fl">Transition (ms)</span>
+      <input type="number" id="transitionMs" min="0" max="5000" step="50" value="300">
+
+      <span class="fl">Progress poll interval (ms)</span>
+      <input type="number" id="progressUpdateMs" min="100" max="10000" step="100" value="500">
+    </div>
+
+    <p class="sh" style="margin-top:28px">About</p>
+    <div class="info">
+      The plugin talks to your ESP32 via the <strong>ESPHome REST API</strong> (plain HTTP on port 80).
+      No additional libraries needed — just flash <code>cnc-status-light.yaml</code> and point the host
+      field at its static IP.<br><br>
+      The <strong>Light Entity ID</strong> and <strong>Progress Entity ID</strong> must match the
+      <code>name:</code> values in your ESPHome YAML (lowercased, spaces → underscores).
+    </div>
+  </div>
+
+  <!-- MACHINE STATES ──────────────────────────────────────────────────────── -->
+  <div id="pane-states" class="pane">
+    <div class="info">
+      Set the colour, brightness, and animation effect for each machine state.
+      <strong>Send</strong> previews a state on the LEDs right now without saving.
+      Changes only apply after clicking <strong>Save</strong>.
+    </div>
+    <table class="st">
+      <thead>
+        <tr>
+          <th style="width:145px">State</th>
+          <th style="width:100px">Colour</th>
+          <th style="width:155px">Brightness</th>
+          <th>Effect</th>
+          <th style="width:65px">Preview</th>
+        </tr>
+      </thead>
+      <tbody id="stateRows"></tbody>
+    </table>
+  </div>
+
+  <!-- PROGRESS BAR ────────────────────────────────────────────────────────── -->
+  <div id="pane-progress" class="pane">
+    <div class="info">
+      When the <strong>Run</strong> state uses the <strong>Progress Bar</strong> effect, LEDs fill
+      left-to-right proportionally to the current job completion percentage.<br><br>
+      The plugin sends the percentage to the ESP32's <code>number</code> entity
+      (<code>cnc_progress</code>). A lambda in the firmware converts it to lit pixels in real time.
+      Progress resets to 0 automatically when the job ends.
+    </div>
+
+    <p class="sh">Timing</p>
+    <div class="fg">
+      <span class="fl">Poll interval (ms)</span>
+      <div class="row">
+        <input type="number" id="progressUpdateMs2" min="100" max="10000" step="100" value="500">
+        <span style="font-size:11px;color:var(--text-dim)">Lower = smoother, higher = fewer HTTP requests</span>
+      </div>
+    </div>
+
+    <p class="sh">Colours</p>
+    <div class="info">
+      Progress bar colours are compiled into the ESP32 firmware via substitution variables in
+      <code>cnc-status-light.yaml</code>. Edit the values below and re-flash to change them.
+      <br><br>
+      <strong>prog_r / prog_g / prog_b</strong> — filled portion colour (default: blue 0, 80, 255)<br>
+      <strong>prog_bg_r / prog_bg_g / prog_bg_b</strong> — unfilled background (default: near-black 5, 5, 5)<br>
+      <strong>prog_head_r / prog_head_g / prog_head_b</strong> — bright tip LED (default: white 255, 255, 255)
+    </div>
+
+    <p class="sh">How It Looks</p>
+    <div style="display:flex;align-items:center;gap:4px;margin-top:4px">
+      <!-- Simple visual mockup of progress bar -->
+      <div id="progViz" style="display:flex;gap:3px;flex-wrap:wrap;max-width:500px"></div>
+    </div>
+    <p style="font-size:11px;color:var(--text-dim);margin-top:8px">
+      Example: 12 of 30 LEDs lit (40% complete). Drag to simulate:
+      <input type="range" id="progDemo" min="0" max="100" value="40" style="width:140px;vertical-align:middle;margin-left:6px">
+      <span id="progPct" style="font-size:11px;color:var(--text-dim)">40%</span>
+    </p>
+  </div>
+
+  <!-- EFFECTS REFERENCE ───────────────────────────────────────────────────── -->
+  <div id="pane-effects" class="pane">
+    <div class="info">
+      All effects must be defined in <code>cnc-status-light.yaml</code>. The bundled YAML includes
+      every effect listed here. Effect names are case-sensitive and must match exactly.
+    </div>
+
+    <table class="et">
+      <thead>
+        <tr>
+          <th style="width:145px">Effect name</th>
+          <th style="width:95px">Strip type</th>
+          <th>Description</th>
+          <th style="width:130px">Recommended for</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td><code>(none / Solid)</code></td>
+          <td><span class="tag tag-any">Any</span></td>
+          <td>Steady colour with no animation</td>
+          <td>Idle, Run, Check</td>
+        </tr>
+        <tr>
+          <td><code>Pulse</code></td>
+          <td><span class="tag tag-any">Any</span></td>
+          <td>Gentle breathe — fades in and out slowly</td>
+          <td>Hold, Door, Tool Change</td>
+        </tr>
+        <tr>
+          <td><code>Fast Pulse</code></td>
+          <td><span class="tag tag-any">Any</span></td>
+          <td>Rapid flash — conveys urgency</td>
+          <td>Alarm</td>
+        </tr>
+        <tr>
+          <td><code>Strobe</code></td>
+          <td><span class="tag tag-any">Any</span></td>
+          <td>Hard on/off strobe at fixed interval</td>
+          <td>Alarm, Door</td>
+        </tr>
+        <tr>
+          <td><code>Flicker</code></td>
+          <td><span class="tag tag-any">Any</span></td>
+          <td>Random candle-like intensity flicker</td>
+          <td>Tool Change, Sleep</td>
+        </tr>
+        <tr>
+          <td><code>Scan</code></td>
+          <td><span class="tag tag-addr">Addressable</span></td>
+          <td>Short bright segment bounces back and forth across the strip</td>
+          <td>Homing</td>
+        </tr>
+        <tr>
+          <td><code>Twinkle</code></td>
+          <td><span class="tag tag-addr">Addressable</span></td>
+          <td>Random pixels sparkle and fade independently</td>
+          <td>Idle, Check</td>
+        </tr>
+        <tr>
+          <td><code>Fireworks</code></td>
+          <td><span class="tag tag-addr">Addressable</span></td>
+          <td>Sparks shoot out from random positions and fade</td>
+          <td>Idle (festive)</td>
+        </tr>
+        <tr>
+          <td><code>Color Wipe</code></td>
+          <td><span class="tag tag-addr">Addressable</span></td>
+          <td>Colour sweeps continuously from one end to the other</td>
+          <td>Homing, Check</td>
+        </tr>
+        <tr>
+          <td><code>Rainbow</code></td>
+          <td><span class="tag tag-addr">Addressable</span></td>
+          <td>Full rainbow wash scrolls across all LEDs (ignores colour setting)</td>
+          <td>Idle (decorative)</td>
+        </tr>
+        <tr>
+          <td><code>Progress Bar</code></td>
+          <td><span class="tag tag-prog">Addressable</span></td>
+          <td>
+            LEDs fill left-to-right proportionally to job completion. Progress % is
+            sent by the plugin to the ESP32 in real time.
+          </td>
+          <td>Run (cutting)</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="info" style="margin-top:14px">
+      <strong>Any strip</strong> effects work on both simple single-colour and addressable LEDs.<br>
+      <strong>Addressable</strong> effects require per-pixel LEDs (WS2812B, SK6812, APA102, etc.).<br>
+      <strong>Rainbow</strong> and <strong>Fireworks</strong> ignore the colour setting — they use their own colour logic.
+    </div>
+  </div>
+
+</div><!-- /.content -->
+
+<!-- ── Footer ──────────────────────────────────────────────────────────────── -->
+<div class="footer">
+  <button class="btn btn-primary"    onclick="saveSettings()">Save</button>
+  <button class="btn btn-secondary"  onclick="resetDefaults()">Reset Defaults</button>
+  <button class="btn btn-secondary"  onclick="closeDialog()">Close</button>
+  <span class="fmsg" id="fmsg"></span>
+</div>
+
+<!-- ── Script ──────────────────────────────────────────────────────────────── -->
+<script>
+'use strict';
+
+var SERVER_PORT  = __SERVER_PORT__;
+var PLUGIN_ID    = 'com.ncsender.espstatus';
+var BASE_URL     = 'http://localhost:' + SERVER_PORT;
+var SETTINGS_URL = BASE_URL + '/api/plugins/' + PLUGIN_ID + '/settings';
+
+var EFFECTS = [
+  { value: '',             label: 'Solid (no effect)' },
+  { value: 'Pulse',        label: 'Pulse — slow breathe' },
+  { value: 'Fast Pulse',   label: 'Fast Pulse — rapid flash' },
+  { value: 'Strobe',       label: 'Strobe — hard on/off flash' },
+  { value: 'Flicker',      label: 'Flicker — candle flicker' },
+  { value: 'Scan',         label: 'Scan — bouncing dot  [addressable]' },
+  { value: 'Twinkle',      label: 'Twinkle — random sparkle  [addressable]' },
+  { value: 'Fireworks',    label: 'Fireworks — spark burst  [addressable]' },
+  { value: 'Color Wipe',   label: 'Color Wipe — sweeps strip  [addressable]' },
+  { value: 'Rainbow',      label: 'Rainbow — full rainbow  [addressable]' },
+  { value: 'Progress Bar', label: 'Progress Bar — job progress  [addressable]' },
+];
+
+var STATE_META = {
+  disconnected: { label: 'Disconnected',  accent: '#666' },
+  Idle:         { label: 'Idle',          accent: '#4caf7d' },
+  Run:          { label: 'Run (Cutting)', accent: '#4fa3e8' },
+  Hold:         { label: 'Hold (Paused)', accent: '#f0a84e' },
+  Jog:          { label: 'Jog',           accent: '#4db8ff' },
+  Home:         { label: 'Homing',        accent: '#a574e8' },
+  Check:        { label: 'Check Mode',    accent: '#4ddede' },
+  Door:         { label: 'Door Open',     accent: '#e87a4f' },
+  Sleep:        { label: 'Sleep',         accent: '#555' },
+  Alarm:        { label: 'Alarm',         accent: '#e05252' },
+  toolchange:   { label: 'Tool Change',   accent: '#d0d0d0' },
+};
+
+var DEFAULTS = {
+  espHost: '192.168.1.100', lightEntityId: 'cnc_status',
+  progressEntityId: 'cnc_progress', transitionMs: 300, progressUpdateMs: 500,
+  stateMap: {
+    disconnected: { r:   0, g:   0, b:   0, brightness:   0, effect: '' },
+    Idle:         { r:   0, g: 200, b:   0, brightness: 180, effect: '' },
+    Run:          { r:   0, g:  80, b: 255, brightness: 220, effect: 'Progress Bar' },
+    Hold:         { r: 255, g: 200, b:   0, brightness: 200, effect: 'Pulse' },
+    Jog:          { r:   0, g: 160, b: 255, brightness: 180, effect: 'Scan' },
+    Home:         { r: 160, g:   0, b: 255, brightness: 200, effect: 'Scan' },
+    Check:        { r:   0, g: 220, b: 220, brightness: 180, effect: '' },
+    Door:         { r: 255, g: 100, b:   0, brightness: 200, effect: 'Pulse' },
+    Sleep:        { r:  20, g:  20, b:  20, brightness:  40, effect: '' },
+    Alarm:        { r: 255, g:   0, b:   0, brightness: 255, effect: 'Fast Pulse' },
+    toolchange:   { r: 255, g: 255, b: 255, brightness: 200, effect: 'Flicker' },
+  },
+};
+
+var cfg = deepCopy(DEFAULTS);
+
+// ── Colour helpers ────────────────────────────────────────────────────────── //
+function toHex(r, g, b) {
+  return '#' + [r, g, b].map(function(v){
+    return ('0' + Math.max(0,Math.min(255,v||0)).toString(16)).slice(-2);
+  }).join('');
+}
+function fromHex(h) {
+  var m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(h);
+  return m ? { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) } : {r:0,g:0,b:0};
+}
+function deepCopy(o) { return JSON.parse(JSON.stringify(o)); }
+
+// ── Tabs ──────────────────────────────────────────────────────────────────── //
+document.querySelectorAll('.tab').forEach(function(t) {
+  t.addEventListener('click', function() {
+    document.querySelectorAll('.tab').forEach(function(x){ x.classList.remove('active'); });
+    document.querySelectorAll('.pane').forEach(function(x){ x.classList.remove('active'); });
+    t.classList.add('active');
+    document.getElementById('pane-' + t.dataset.tab).classList.add('active');
+  });
+});
+
+// ── Build state rows ──────────────────────────────────────────────────────── //
+function buildRows() {
+  var tbody = document.getElementById('stateRows');
+  tbody.innerHTML = '';
+  Object.keys(STATE_META).forEach(function(key) {
+    var meta = STATE_META[key];
+    var s    = cfg.stateMap[key] || { r:0, g:0, b:0, brightness:128, effect:'' };
+    var hex  = toHex(s.r, s.g, s.b);
+    var opts = EFFECTS.map(function(e){
+      return '<option value="'+e.value+'"'+(s.effect===e.value?' selected':'')+'>'+e.label+'</option>';
+    }).join('');
+    var tr = document.createElement('tr');
+    tr.innerHTML =
+      '<td><span class="badge" style="color:'+meta.accent+';border-left-color:'+meta.accent+'">'+meta.label+'</span></td>' +
+      '<td><div class="cc">' +
+        '<input type="color" value="'+hex+'" data-key="'+key+'" class="colorPick">' +
+        '<span class="hex">'+hex.toUpperCase()+'</span>' +
+      '</div></td>' +
+      '<td><div class="bc">' +
+        '<input type="range" min="0" max="255" value="'+s.brightness+'" data-key="'+key+'" class="brightSlide">' +
+        '<span class="bv">'+s.brightness+'</span>' +
+      '</div></td>' +
+      '<td><select data-key="'+key+'" class="effectSel">'+opts+'</select></td>' +
+      '<td><button class="btn-ghost" data-key="'+key+'" class="previewBtn" onclick="sendPreview(\''+key+'\')">Send</button></td>';
+    tbody.appendChild(tr);
+  });
+
+  // Wire colour pickers
+  tbody.querySelectorAll('.colorPick').forEach(function(el) {
+    el.addEventListener('input', function() {
+      var key = el.dataset.key;
+      var rgb = fromHex(el.value);
+      cfg.stateMap[key].r = rgb.r; cfg.stateMap[key].g = rgb.g; cfg.stateMap[key].b = rgb.b;
+      el.parentNode.querySelector('.hex').textContent = el.value.toUpperCase();
+    });
+  });
+  // Wire brightness sliders
+  tbody.querySelectorAll('.brightSlide').forEach(function(el) {
+    el.addEventListener('input', function() {
+      cfg.stateMap[el.dataset.key].brightness = parseInt(el.value);
+      el.parentNode.querySelector('.bv').textContent = el.value;
+    });
+  });
+  // Wire effect dropdowns
+  tbody.querySelectorAll('.effectSel').forEach(function(el) {
+    el.addEventListener('change', function() {
+      cfg.stateMap[el.dataset.key].effect = el.value;
+    });
+  });
+}
+
+// ── Progress bar demo visualisation ──────────────────────────────────────── //
+function buildProgViz(pct) {
+  var total = 30;
+  var filled = Math.round(pct / 100 * total);
+  var viz = document.getElementById('progViz');
+  viz.innerHTML = '';
+  for (var i = 0; i < total; i++) {
+    var dot = document.createElement('div');
+    dot.style.cssText = 'width:12px;height:12px;border-radius:50%;flex-shrink:0;';
+    if (i < filled - 1)      dot.style.background = 'rgb(0,80,255)';
+    else if (i === filled-1) dot.style.background = '#ffffff';
+    else                     dot.style.background = '#111';
+    viz.appendChild(dot);
+  }
+}
+document.getElementById('progDemo').addEventListener('input', function() {
+  var v = parseInt(this.value);
+  document.getElementById('progPct').textContent = v + '%';
+  buildProgViz(v);
+});
+buildProgViz(40);
+
+// ── Collect connection fields into cfg ────────────────────────────────────── //
+function collectConn() {
+  cfg.espHost          = document.getElementById('espHost').value.trim();
+  cfg.lightEntityId    = document.getElementById('lightEntityId').value.trim();
+  cfg.progressEntityId = document.getElementById('progressEntityId').value.trim();
+  cfg.transitionMs     = parseInt(document.getElementById('transitionMs').value)     || 300;
+  cfg.progressUpdateMs = parseInt(document.getElementById('progressUpdateMs').value) || 500;
+  var p2 = parseInt(document.getElementById('progressUpdateMs2').value);
+  if (p2 >= 100) cfg.progressUpdateMs = p2;
+}
+
+function fillConn(s) {
+  document.getElementById('espHost').value          = s.espHost          || '';
+  document.getElementById('lightEntityId').value    = s.lightEntityId    || '';
+  document.getElementById('progressEntityId').value = s.progressEntityId || '';
+  document.getElementById('transitionMs').value     = s.transitionMs     || 300;
+  document.getElementById('progressUpdateMs').value = s.progressUpdateMs || 500;
+  document.getElementById('progressUpdateMs2').value= s.progressUpdateMs || 500;
+}
+
+// ── Test connection ───────────────────────────────────────────────────────── //
+function testConn() {
+  collectConn();
+  if (!cfg.espHost || !cfg.lightEntityId) { status('Fill in host and entity ID first','err'); return; }
+  setDot('spin','Checking…');
+  fetch('http://'+cfg.espHost+'/light/'+cfg.lightEntityId, { signal: AbortSignal.timeout(4000) })
+    .then(function(r){ setDot(r.ok?'ok':'err', r.ok?'Connected':'HTTP '+r.status); })
+    .catch(function(){ setDot('err','Unreachable'); status('Cannot reach '+cfg.espHost,'err'); });
+}
+function setDot(cls, lbl) {
+  var d = document.getElementById('cDot'); d.className = 'dot ' + cls;
+  document.getElementById('cLbl').textContent = lbl;
+}
+
+// ── Send preview (direct HTTP to ESP32) ──────────────────────────────────── //
+function sendPreview(key) {
+  collectConn();
+  var s   = cfg.stateMap[key];
+  var url = 'http://'+cfg.espHost+'/light/'+cfg.lightEntityId;
+  if (!cfg.espHost || !cfg.lightEntityId) { status('Set host + entity ID first','err'); return; }
+  if (!s || s.brightness === 0) {
+    fetch(url+'/turn_off',{method:'POST'})
+      .then(function(){ status('LED turned off','inf'); })
+      .catch(function(e){ status('Preview failed: '+e.message,'err'); });
+    return;
+  }
+  var p = 'r='+s.r+'&g='+s.g+'&b='+s.b+'&brightness='+s.brightness+
+          '&transition='+(cfg.transitionMs/1000).toFixed(2);
+  if (s.effect) p += '&effect='+encodeURIComponent(s.effect);
+  fetch(url+'/turn_on?'+p,{method:'POST'})
+    .then(function(){ status('Preview: '+STATE_META[key].label,'ok'); })
+    .catch(function(e){ status('Preview failed: '+e.message,'err'); });
+}
+
+// ── Save ──────────────────────────────────────────────────────────────────── //
+function saveSettings() {
+  collectConn();
+  fetch(SETTINGS_URL, {
+    method: 'PUT',
+    headers: {'Content-Type':'application/json'},
+    body: JSON.stringify(cfg),
+  })
+  .then(function(r){ status(r.ok?'Settings saved':'Save failed: HTTP '+r.status, r.ok?'ok':'err'); })
+  .catch(function(e){ status('Save failed: '+e.message,'err'); });
+}
+
+// ── Reset ─────────────────────────────────────────────────────────────────── //
+function resetDefaults() {
+  if (!confirm('Reset all settings to factory defaults?')) return;
+  cfg = deepCopy(DEFAULTS);
+  fillConn(cfg); buildRows();
+  status('Defaults restored — click Save to apply','inf');
+}
+
+// ── Close ─────────────────────────────────────────────────────────────────── //
+function closeDialog() {
+  window.postMessage({ type: 'close-plugin-dialog' }, '*');
+}
+
+// ── Status bar ────────────────────────────────────────────────────────────── //
+var _stTimer;
+function status(msg, cls) {
+  var el = document.getElementById('fmsg');
+  el.textContent = msg; el.className = 'fmsg show ' + (cls||'');
+  clearTimeout(_stTimer);
+  _stTimer = setTimeout(function(){ el.classList.remove('show'); }, 5000);
+}
+
+// ── Init: load saved settings ─────────────────────────────────────────────── //
+fetch(SETTINGS_URL)
+  .then(function(r){ return r.ok ? r.json() : null; })
+  .then(function(saved) {
+    if (saved) {
+      cfg = Object.assign({}, DEFAULTS, saved, {
+        stateMap: Object.assign({}, DEFAULTS.stateMap, saved.stateMap || {}),
+      });
+    }
+    fillConn(cfg); buildRows();
+  })
+  .catch(function() {
+    fillConn(cfg); buildRows();
+    status('Could not load saved settings — using defaults','inf');
+  });
+</script>
+</body>
+</html>
