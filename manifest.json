@@ -1,7 +1,7 @@
 {
   "id": "com.ncsender.espstatus",
   "name": "ESP Status Light",
-  "version": "2.0.1",
+  "version": "3.0.0",
   "entry": "index.js",
   "icon": "icon.svg",
   "category": "utility",
@@ -11,7 +11,7 @@
     { "id": "open-config", "label": "ESP Status Light", "icon": "icon.svg", "clientOnly": true }
   ],
   "author": "Beeeeeans",
-  "description": "Sends CNC machine state to an ESP32 running ESPHome to drive addressable LEDs. Includes a live job progress bar across the LED strip.",
+  "description": "Sends CNC machine state to a WLED device to drive addressable LEDs. Supports all 180+ WLED effects with per-state colour, brightness, speed, and intensity. Includes a live job progress bar using WLED's built-in Percent effect.",
   "repository": "https://github.com/Beeeeeans/ncsender-plugin-espstatus",
 "events": ["server-state-updated", "onAfterJobEnd"]
 }

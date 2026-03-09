@@ -1,43 +1,27 @@
-# ncSender ESP Status Light
+# ncSender WLED Status Light
 
-An [ncSender](https://github.com/siganberg/ncSender) plugin that drives addressable LEDs on an ESP32 running [ESPHome](https://esphome.io) — one colour and animation effect per machine state, plus a live job progress bar.
+An [ncSender](https://github.com/siganberg/ncSender) plugin that drives addressable LEDs on a [WLED](https://kno.wled.ge) device — one colour and animation effect per machine state, plus a live job progress bar.
+
+No custom firmware, no YAML, no compilation. Just flash standard WLED.
 
 ## Features
 
-- Per-state RGB colour, brightness, and effect (Idle, Run, Hold, Alarm, Homing, Tool Change, etc.)
-- Live progress bar — LEDs fill proportionally to job completion during a cut
-- 11 built-in effects: Solid, Pulse, Fast Pulse, Strobe, Flicker, Scan, Twinkle, Fireworks, Color Wipe, Rainbow, Progress Bar
-- Progress bar colours (fill, background, tip) configurable live — no re-flash needed
+- Per-state colour, brightness, effect, speed, and intensity (Idle, Run, Hold, Alarm, Homing, Tool Change, etc.)
+- Full access to **180+ WLED effects** — effect dropdowns populated live from your device
+- Live progress bar — LEDs fill proportionally to job completion using WLED's built-in **Percent effect**
+- Secondary colour (col[1]) configurable per state — used as background by the progress bar and as accent by dual-colour effects
 - Preview any state instantly on the LEDs from the settings dialog
-- YAML generator tab builds your firmware config block ready to paste and flash
-
-## What requires a re-flash vs what's live
-
-| Setting | Live (no re-flash) | Requires re-flash |
-|---|---|---|
-| Per-state colour / brightness / effect | ✅ | |
-| Progress bar colours | ✅ | |
-| LED strip type / colour order | | ✅ |
-| Data pin | | ✅ |
-| LED count | | ✅ |
-
-Hardware settings are compiled into the firmware. Use the **YAML Generator** tab in the plugin settings to build the correct config block, then re-flash once.
+- Everything configurable at runtime — no re-flash ever needed
 
 ## Quick Start
 
-### 1. Flash the ESP32
+### 1. Flash WLED
 
-```bash
-cd esphome/
-cp secrets.yaml.example secrets.yaml   # add WiFi credentials + OTA password
-esphome run cnc-status-light.yaml
-```
-
-The default config targets an ESP32-S3 DevKitC with its onboard RGB LED (1 LED, GPIO48). Edit the `substitutions:` block in `cnc-status-light.yaml` before flashing — or use the **YAML Generator** tab in the plugin to build the right block for your hardware.
+Flash standard [WLED](https://install.wled.me) to your ESP32 or ESP8266. Configure a static IP in WLED's WiFi settings so the plugin can reliably reach it.
 
 ### 2. Install the plugin
 
-Copy the `ncsender-plugin-espstatus/` folder into ncSender's plugins directory:
+Copy the plugin folder into ncSender's plugins directory:
 
 | Platform | Path |
 |---|---|
@@ -48,35 +32,44 @@ Restart ncSender and enable the plugin in **Settings → Plugins**.
 
 ### 3. Configure
 
-Open **ESP Status Light** from the ncSender tool menu. Set your ESP32's static IP and click **Test**, then **Save**.
+Open **WLED Status Light** from the ncSender tool menu:
+
+1. Enter your WLED device's IP address
+2. Click **Test & Load Effects** — this verifies the connection and fetches all 180+ effects from your device
+3. Switch to **Machine States** and customise colours, effects, speed, and intensity per state
+4. Click **Save**
 
 ## Default State → LED Mapping
 
-| State | Colour | Effect |
+| State | Primary Colour | Effect |
 |---|---|---|
 | Disconnected | Off | — |
-| Idle | Green | Solid |
-| Run | Blue | Progress Bar |
-| Hold | Yellow | Pulse |
+| Idle | Green | Colortwinkles |
+| Run | Blue fill / dark bg | Percent (progress bar) |
+| Hold | Yellow | Breathe |
+| Jog | Blue | Scan |
 | Homing | Purple | Scan |
 | Check Mode | Cyan | Solid |
-| Door Open | Orange | Pulse |
+| Door Open | Orange | Breathe |
 | Sleep | Dim white | Solid |
-| Alarm | Red | Fast Pulse |
-| Tool Change | White | Flicker |
+| Alarm | Red | Blink |
+| Tool Change | Yellow | Fire Flicker |
 
-All mappings are fully configurable from the plugin settings dialog.
+All mappings are fully configurable from the settings dialog.
+
+## How the progress bar works
+
+During a cut (Run state), the plugin sends the current job completion percentage to WLED every 500 ms (configurable). WLED's **Percent effect** (fx:98) fills LEDs proportionally:
+
+- **Primary colour** (col[0]) = filled portion
+- **Secondary colour** (col[1]) = unfilled background
+- **Intensity** is set automatically from the job percentage — no manual control needed
 
 ## Requirements
 
 - ncSender (any current version)
-- ESP32 with WiFi (ESP32, ESP32-S3, ESP32-C3, ESP32-S2)
-- ESPHome ≥ 2024.1
-- Addressable LED strip compatible with NeoPixelBus (WS2812B recommended)
-
-## Documentation
-
-See [docs/USER_GUIDE.md](docs/USER_GUIDE.md) for full wiring, ESPHome setup, effect descriptions, troubleshooting, and more.
+- Any ESP32 or ESP8266 running **WLED ≥ 0.12**
+- Addressable LED strip (WS2812B, SK6812, APA102, etc.)
 
 ## License
 
