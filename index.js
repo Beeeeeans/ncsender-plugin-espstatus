@@ -69,40 +69,45 @@ export async function onLoad(ctx) {
 
   const RESEND_EVERY = 20  // every ~10 s
 
-  setInterval(async () => {
+  // Shared state-change handler — called by both the event and the poll
+  function checkState() {
     const serverState = ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
     const key         = resolveStateKey(serverState)
-    pollCount++
-
-    if (key === lastKey) {
-      // Update progress while cutting
-      if (key === 'Run') {
-        const pct = serverState?.jobLoaded?.progressPercent ?? 0
-        if (pct !== lastProgressPct) {
-          lastProgressPct = pct
-          settings        = mergeSettings(ctx.getSettings())
-          sendProgress(settings, pct).catch(err =>
-            ctx.log(`[WLED Status] Progress update failed: ${err.message}`)
-          )
-        }
-      }
-      // Periodic heartbeat — recovers from dropped commands
-      if (pollCount % RESEND_EVERY === 0) {
-        settings = mergeSettings(ctx.getSettings())
-        sendState(settings, key).catch(() => {})
-      }
-      return
-    }
-
-    // State changed
+    if (key === lastKey) return
     lastKey         = key
     lastProgressPct = -1
     settings        = mergeSettings(ctx.getSettings())
     ctx.log(`[WLED Status] State → ${key}`)
-
     sendState(settings, key).catch(err =>
       ctx.log(`[WLED Status] LED send failed: ${err.message}`)
     )
+  }
+
+  // Immediate detection — fires as soon as ncSender broadcasts a state change
+  ctx.registerEventHandler('server-state-updated', checkState)
+
+  // Poll — only for progress updates during Run and periodic heartbeat
+  setInterval(() => {
+    pollCount++
+    const serverState = ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
+
+    // Update progress while cutting
+    if (lastKey === 'Run') {
+      const pct = serverState?.jobLoaded?.progressPercent ?? 0
+      if (pct !== lastProgressPct) {
+        lastProgressPct = pct
+        settings        = mergeSettings(ctx.getSettings())
+        sendProgress(settings, pct).catch(err =>
+          ctx.log(`[WLED Status] Progress update failed: ${err.message}`)
+        )
+      }
+    }
+
+    // Periodic heartbeat — recovers from dropped commands
+    if (pollCount % RESEND_EVERY === 0) {
+      settings = mergeSettings(ctx.getSettings())
+      sendState(settings, lastKey).catch(() => {})
+    }
   }, 500)
 
   ctx.registerEventHandler('onAfterJobEnd', () => {
