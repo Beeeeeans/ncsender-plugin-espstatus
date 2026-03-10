@@ -84,12 +84,18 @@ export async function onLoad(ctx) {
   }
 
   // Immediate detection — event passes new state as first argument
-  ctx.registerEventHandler('server-state-updated', checkState)
+  ctx.registerEventHandler('server-state-updated', (eventState) => {
+    ctx.log('[WLED Status] server-state-updated event fired')
+    checkState(eventState)
+  })
 
-  // Poll — only for progress updates during Run and periodic heartbeat
+  // Poll — state detection fallback + progress updates during Run + periodic heartbeat
   setInterval(() => {
     pollCount++
     const serverState = ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
+
+    // Always check for state change (fallback if event doesn't fire)
+    checkState(serverState)
 
     // Update progress while cutting (only when Percent effect is active)
     if (lastKey === 'Run' && settings.stateMap.Run.fx === FX.PERCENT) {
