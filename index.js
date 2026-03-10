@@ -69,9 +69,9 @@ export async function onLoad(ctx) {
 
   const RESEND_EVERY = 20  // every ~10 s
 
-  // Shared state-change handler — called by both the event and the poll
-  function checkState() {
-    const serverState = ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
+  // Shared state-change handler — called by event (with payload) and poll (without)
+  function checkState(eventState) {
+    const serverState = eventState ?? ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
     const key         = resolveStateKey(serverState)
     if (key === lastKey) return
     lastKey         = key
@@ -83,7 +83,7 @@ export async function onLoad(ctx) {
     )
   }
 
-  // Immediate detection — fires as soon as ncSender broadcasts a state change
+  // Immediate detection — event passes new state as first argument
   ctx.registerEventHandler('server-state-updated', checkState)
 
   // Poll — only for progress updates during Run and periodic heartbeat
@@ -91,8 +91,8 @@ export async function onLoad(ctx) {
     pollCount++
     const serverState = ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
 
-    // Update progress while cutting
-    if (lastKey === 'Run') {
+    // Update progress while cutting (only when Percent effect is active)
+    if (lastKey === 'Run' && settings.stateMap.Run.fx === FX.PERCENT) {
       const pct = serverState?.jobLoaded?.progressPercent ?? 0
       if (pct !== lastProgressPct) {
         lastProgressPct = pct
@@ -136,7 +136,7 @@ async function sendState(settings, stateKey) {
       col: [[s.r, s.g, s.b], [s.r2 ?? 0, s.g2 ?? 0, s.b2 ?? 0]],
       fx:  s.fx,
       sx:  s.sx ?? 128,
-      ix:  stateKey === 'Run' ? 0 : (s.ix ?? 128),
+      ix:  (stateKey === 'Run' && s.fx === FX.PERCENT) ? 0 : (s.ix ?? 128),
     }],
   })
 }

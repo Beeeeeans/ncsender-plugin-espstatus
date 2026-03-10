@@ -414,9 +414,9 @@ select:focus {
     </table>
 
     <div class="info" style="margin-top:12px;font-size:11px">
-      The <strong>Run</strong> state uses WLED's built-in <strong>Percent effect (fx:98)</strong> to
-      fill LEDs proportionally to job completion. Primary = fill colour, Secondary = background colour.
-      Intensity is driven automatically by job progress — no manual control needed.
+      Tip: select <strong>Percent (fx:98)</strong> for the <strong>Run</strong> state to fill LEDs
+      proportionally to job completion — intensity is then driven automatically by job progress.
+      Any other effect works normally with the manual intensity slider.
     </div>
   </div>
 
@@ -545,11 +545,9 @@ function buildRows() {
     var ix    = s.ix !== undefined ? s.ix : 128;
     var fx    = s.fx !== undefined ? s.fx : 0;
 
-    // Effect cell — locked for Run, dropdown for others
+    // Effect cell — dropdown for all states including Run
     var effectCell;
-    if (isRun) {
-      effectCell = '<td><span class="locked">Percent — job progress (fx:98)</span></td>';
-    } else if (wledEffects && wledEffects.length) {
+    if (wledEffects && wledEffects.length) {
       var opts = wledEffects.map(function(name, i) {
         return '<option value="' + i + '"' + (fx === i ? ' selected' : '') + '>' +
                escHtml(i + ': ' + name) + '</option>';
@@ -561,17 +559,12 @@ function buildRows() {
         '</select></td>';
     }
 
-    // Intensity cell — locked for Run (driven by job progress)
-    var intensityCell;
-    if (isRun) {
-      intensityCell = '<td><span class="locked">auto (job %)</span></td>';
-    } else {
-      intensityCell =
-        '<td><div class="bc">' +
-          '<input type="range" min="0" max="255" value="' + ix + '" data-key="' + key + '" class="ixSlide">' +
-          '<span class="bv">' + ix + '</span>' +
-        '</div></td>';
-    }
+    // Intensity cell — shown for all states; for Run with Percent selected it is driven automatically
+    var intensityCell =
+      '<td><div class="bc">' +
+        '<input type="range" min="0" max="255" value="' + ix + '" data-key="' + key + '" class="ixSlide">' +
+        '<span class="bv">' + ix + '</span>' +
+      '</div></td>';
 
     var tr = document.createElement('tr');
     if (isRun) tr.classList.add('run-row');
