@@ -71,8 +71,9 @@ export async function onLoad(ctx) {
 
   // Shared state-change handler — called by event (with payload) and poll (without)
   function checkState(eventState) {
-    const serverState = eventState ?? ctx.getServerState?.() ?? ctx.getMachineState?.() ?? null
+    const serverState = eventState ?? ctx.getMachineState?.() ?? ctx.getServerState?.() ?? null
     const key         = resolveStateKey(serverState)
+    ctx.log(`[WLED Status] poll key=${key} lastKey=${lastKey}`)
     if (key === lastKey) return
     lastKey         = key
     lastProgressPct = -1
